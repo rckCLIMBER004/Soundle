@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>YouTube Worldle Game</title>
+    <style>
+        /* Add your custom CSS styles here */
+    </style>
+    <script src="https://www.youtube.com/iframe_api"></script>
+    <script>
+        // Define an array of countries
+        var countries = [
+            "Afghanistan",
+            "Albania",
+            "Algeria",
+            // Add more countries here...
+        ];
+        
+        // Function to initialize the game
+        function initializeGame() {
+            // Load a random YouTube song sample
+            loadRandomSongSample();
+            
+            // Display the list of countries
+            displayCountries();
+        }
+        
+        // Function to load a random YouTube song sample
+        function loadRandomSongSample() {
+            // Retrieve a random video ID
+            var videoId = generateRandomVideoId();
+            
+            // Load the YouTube player API
+            if (typeof YT === 'undefined' || typeof YT.Player === 'undefined') {
+                var tag = document.createElement('script');
+                tag.src = "https://www.youtube.com/iframe_api";
+                var firstScriptTag = document.getElementsByTagName('script')[0];
+                firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+            }
+            
+            // Create the YouTube player
+            window.onYouTubeIframeAPIReady = function() {
+                new YT.Player('player', {
+                    videoId: videoId,
+                    playerVars: {
+                        controls: 0,
+                        autoplay: 1,
+                        mute: 1,
+                        enablejsapi: 1,
+                        origin: window.location.origin,
+                        host: 'https://www.youtube.com',
+                        cookie_flags: 'samesite=none;secure'
+                    },
+                    events: {
+                        'onReady': onPlayerReady
+                    }
+                });
+            }
+        }
+        
+        // Function called when the YouTube player is ready
+        function onPlayerReady(event) {
+            // Retrieve the video's metadata, including the artist's location from the About page
+            event.target.getVideoData().then(function(data) {
+                var videoId = data.video_id;
+                var artistCountry = getArtistCountryFromAboutPage(videoId);
+                
+                // Store the artist's country in a data attribute
+                var playerElement = document.getElementById('player');
+                playerElement.dataset.artistCountry = artistCountry;
+            });
+        }
+        
+        // Function to retrieve the artist's country from their YouTube About page
+        function getArtistCountryFromAboutPage(videoId) {
+            // Make an API call to retrieve the artist's About page
+            var aboutUrl = "https://www.googleapis.com/youtube/v3/videos?part=snippet&id=" + videoId + "&key=YOUR_YOUTUBE_API_KEY";
+            return fetch(aboutUrl)
+                .then(function(response) {
+                    return response.json();
+                })
+                .then(function(data) {
+                    var country = data.items[0].snippet.country;
+                    return country;
+                })
+                .catch(function(error) {
+                    console.log('Error retrieving artist country: ', error);
+                });
+        }
+        
+        // Function to display the list of countries
+        function displayCountries() {
+            var countriesContainer = document.getElementById('countries');
+            
+            // Create an option element for each country
+            countries.forEach(function(country) {
+                var option = document.createElement('option');
+                option.value = country;
+                option.textContent = country;
+                countriesContainer.appendChild(option);
+            });
+        }
+        
+        // Function to check the player's guess
+        function checkGuess() {
+            var playerElement = document.getElementById('player');
+            var artistCountry = playerElement.dataset.artistCountry
